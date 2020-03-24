@@ -17,12 +17,49 @@
 
 const float kZoneMapsPageSize = 4096;
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+//////                                  numerical  limits                                  //////
+/////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename C>
 class NumericalLimits {
     public:
     static C Min();
     static C Max();
 };
+
+template <>
+uint64_t NumericalLimits<uint64_t>::Max() {
+    return std::numeric_limits<uint64_t>::max();
+}
+template <>
+uint64_t NumericalLimits<uint64_t>::Min() {
+    return std::numeric_limits<uint64_t>::min();
+}
+template <>
+int64_t NumericalLimits<int64_t>::Max() {
+    return std::numeric_limits<int64_t>::max();
+}
+template <>
+int64_t NumericalLimits<int64_t>::Min() {
+    return std::numeric_limits<int64_t>::min();
+}
+template <>
+double NumericalLimits<double>::Max() {
+    return std::numeric_limits<double>::max();
+}
+template <>
+double NumericalLimits<double>::Min() {
+    return std::numeric_limits<double>::min();
+}
+template <>
+int NumericalLimits<int>::Max() {
+    return std::numeric_limits<int>::max();
+}
+template <>
+int NumericalLimits<int>::Min() {
+    return std::numeric_limits<int>::min();
+}
 
 template<typename T>
 struct ZoneMap {
