@@ -2,9 +2,11 @@
 #define FILE_VECTOR_HPP
 
 #include <vector>
+#include <math.h>
 #include <stdexcept>
 #include <type_traits>
 #include <algorithm>
+#include "ZoneMaps.h"
 
 extern "C" {
     #include <unistd.h>
@@ -20,6 +22,7 @@ using namespace std;
 // but not ones embedded in structs.
 
 template <typename T, typename = void> class file_vector;
+
 
 template <typename T>
 class file_vector<T, typename enable_if<!(is_pointer<T>::value || is_reference<T>::value)>::type> {
@@ -140,11 +143,11 @@ class file_vector<T, typename enable_if<!(is_pointer<T>::value || is_reference<T
 
         if (size == -1) {
             if (::close(fd) == -1) {
-                throw runtime_error("Unanble to close file after failing "
+                throw runtime_error("Unable to close file after failing "
                     "to get length of file for file_vector."
                 );
             }
-            throw runtime_error("Unanble to get length of file for file_vector.");
+            throw runtime_error("Unable to get length of file for file_vector.");
         }
 
         used = size / value_size;
@@ -162,7 +165,7 @@ class file_vector<T, typename enable_if<!(is_pointer<T>::value || is_reference<T
 
             if (values == nullptr) {
                 if (::close(fd) == -1) {
-                    throw runtime_error("Unanble close file after failing "
+                    throw runtime_error("Unable close file after failing "
                         "to mmap file for file_vector."
                     );
                 }
@@ -185,7 +188,7 @@ class file_vector<T, typename enable_if<!(is_pointer<T>::value || is_reference<T
 
         // First, resize the file.
         if (ftruncate(fd, size * value_size) == -1) {
-            throw runtime_error("Unanble to extend memory for file_vector resize.");
+            throw runtime_error("Unable to extend memory for file_vector resize.");
         }
 
         // Second, map the resized file to a new address, sharing the elements.
@@ -232,6 +235,12 @@ class file_vector<T, typename enable_if<!(is_pointer<T>::value || is_reference<T
 
 public:
     static int constexpr create_file = 1;
+
+    std::shared_ptr<ZoneMapSet<T>> create_zonemaps(unsigned int page_size, uint64_t offset) {
+        std::shared_ptr<ZoneMapSet<T>> res = std::make_shared<ZoneMapSet<T>>(page_size, this->size());
+        res->InitFromData(this->values, this->size());
+        return res;
+    }
 
     void close() {
         if (values != nullptr) {
@@ -781,27 +790,27 @@ public:
     // Element Access
 
     // Unchecked access
-    const_reference operator[] (int const i) const {
+    const_reference operator[] (size_t const i) const {
         assert(0 <= i && i < used);
 
         return values[i];
     }
 
-    reference operator[] (int const i) {
+    reference operator[] (size_t const i) {
         assert(0 <= i && i < used);
 
         return values[i];
     }
 
     // Bounds checked access
-    const_reference at(int const i) const {
+    const_reference at(size_t const i) const {
         if (i < 0 || i >= used) {
             throw out_of_range("file_vector::at(int)");
         } 
         return values[i];
     }
 
-    reference at(int const i) {
+    reference at(size_t const i) {
         if (i < 0 || i >= used) {
             throw out_of_range("file_vector::at(int)");
         } 
