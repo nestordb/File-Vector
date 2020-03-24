@@ -8,33 +8,28 @@ extern "C" {
 }
 
 using namespace std;
-using fv_int = file_vector<int>;
-
-void test_out_of_range(fv_int& fv, int const i) {
-    try { 
-        int const tmp = fv.at(i);
-    } catch (out_of_range const& e) {
-        return;
-    } catch (exception const& e) {
-        throw runtime_error("unexpected exception.");
-    }
-    throw runtime_error("Did not get out-of-range exception.");
-}
 
 int main() {
+    // Initialize random number generator
     srand(1234);
+    // Remove previous - if any - memory mapped file
     system("rm test_queries");
-    fv_int vector_test_queries("test_queries", fv_int::create_file);
+    // Create memory mapped vector
+    file_vector<int> vector_test_queries("test_queries", file_vector<int>::create_file);
+    // Insert 100K numbers in the range of 0 to 1M
     for(size_t i=0; i<100000; i++) {
         vector_test_queries.push_back(rand() % 1000000);
     }
+    // Sort the vector
     std::sort(vector_test_queries.begin(), vector_test_queries.end());
+    // Construct zone-maps
     auto zonemaps = vector_test_queries.create_zonemaps(getpagesize(), 0);
-    // zonemaps->Print();
+       
 
-        
+    // Create a set of queries (the data that we are looking for)
     vector<int> queries = vector<int>({0, 31, 500, 677538,0, 31, 500, 677538,0, 31, 500, 677538,0, 31, 500, 677538,0, 31, 500, 677538});
     
+    // Find each query with a full scan (would never be used in practice given that this is a sorted array, but used for simplicity)
     auto start = std::chrono::high_resolution_clock::now(); 
     int found = 0;
     for(auto &query : queries) {
@@ -49,6 +44,7 @@ int main() {
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
     std::cout << "[SCAN]\t\t Found " << found << " matches in " << duration.count() << " μs" << std::endl;
 
+    // Find each query using a zone-map based skip-sequential scan. 
     start = std::chrono::high_resolution_clock::now(); 
     found = 0;
     for(auto &query : queries) {
